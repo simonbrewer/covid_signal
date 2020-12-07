@@ -17,8 +17,9 @@ load("newdata.RData")
 
 dat2$lpedest <- log(dat2$pedest+1)
 
-# dat2 <- dat2 %>% 
-#   filter(days_since_COVID > 0 & days_since_COVID < 100)
+## Subset for testing
+dat2 <- dat2 %>%
+  filter(days_since_COVID > 20 & days_since_COVID < 40)
 
 myform1 <- lpedest ~ ln_popden_000_hami + ln_empden_000_qtmi + 
   ln_hhsize_qtmi+ income_000_hami + avgveh_hami + 
@@ -65,10 +66,14 @@ system.time(mlm<-lmer(myform2, dat2))
 AIC(mlm)
 summary(mlm)
 
-dat3$e_signal <- ranef(mlm)[[1]][,1]
-tm_shape(dat3) + tm_symbols(col = "e_signal", style = "fisher")
+## Moran's test on base model
+## ranef gets second level residuals
+dat3$resid_lev2 <- ranef(mlm)[[1]][,1]
+tm_shape(dat3) + tm_symbols(col = "resid_lev2", style = "fisher")
 
-moran.test(dat3$e_signal, sig.lw)
+target_MI <- moran.test(dat3$resid_lev2, sig.lw)
+target_z <- target_MI$statistic
+target_p <- target_MI$p.value
 # var<-as.vector(c("E1", "E2", "E3", "E4", "E5"))
 # 
 # system.time(
