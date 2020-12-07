@@ -97,7 +97,7 @@ doParallel::registerDoParallel(cl)
 
 ## Outer loop
 ## iterate over all candidate MEs - maybe replace with a condition?
-while (target_p < threshold_p)  {
+while ((target_p < threshold_p) & (length(Evar) > 0))  {
   # Iteratively updating the model with addition of one block of variable(s)
   # Also: extracting the loglikelihood of each estimated model
   
