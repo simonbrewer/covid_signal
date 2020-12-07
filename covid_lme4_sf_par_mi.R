@@ -20,6 +20,9 @@ dat2$lpedest <- log(dat2$pedest+1)
 ## Subset for testing
 dat2 <- dat2 %>%
   filter(days_since_COVID > 20 & days_since_COVID < 40)
+dat3 <- dat2 %>% distinct(SIGNAL)
+coords <- st_coordinates(dat3)
+nb <- graph2nb(relativeneigh(coords), sym = TRUE, row.names = dat3$SIGNAL)
 
 myform1 <- lpedest ~ ln_popden_000_hami + ln_empden_000_qtmi + 
   ln_hhsize_qtmi+ income_000_hami + avgveh_hami + 
@@ -48,9 +51,9 @@ dat2 <- merge(dat2, E.df, by = "SIGNAL")
 ## Map to show MEs
 myME <- "E10"
 mydsc <- 20
-dat2 %>% 
-  filter(days_since_COVID > 19 & days_since_COVID < 20) %>%
-  tm_shape() + tm_symbols(col = myME, size = 0.25, palette = "PRGn", alpha = 0.5)
+# dat2 %>% 
+#   filter(days_since_COVID > 19 & days_since_COVID < 20) %>%
+#   tm_shape() + tm_symbols(col = myME, size = 0.25, palette = "PRGn", alpha = 0.5)
 
 #multilevel modeling (test)
 myform1 <- "log(pedest+1) ~ ln_popden_000_hami+ln_empden_000_qtmi + ln_hhsize_qtmi+ income_000_hami + avgveh_hami + 
@@ -80,11 +83,12 @@ target_p <- target_MI$p.value
 #   mlm.sf <- forward.lmer(mlm,var)
 # )
 
-threshold_AIC <- 5
+threshold_p <- 0.05
 model_basis <- mlm
-model_null <- update(model_basis, . ~ -. + 1 + (1|SIGNAL))
-target_AIC <- AIC(model_basis)
-improve_AIC <- AIC(model_null) - target_AIC
+dat3$resid_lev2 <- ranef(model_basis)[[1]][,1]
+target_MI <- moran.test(dat3$resid_lev2, sig.lw)
+target_z <- target_MI$statistic
+target_p <- target_MI$p.value
 
 Evar <- as.vector(paste0("E", seq(1,100)))
 
@@ -93,34 +97,34 @@ doParallel::registerDoParallel(cl)
 
 ## Outer loop
 ## iterate over all candidate MEs - maybe replace with a condition?
-while (improve_AIC > threshold_AIC)  {
+while (target_p < threshold_p)  {
   # Iteratively updating the model with addition of one block of variable(s)
   # Also: extracting the loglikelihood of each estimated model
   
-  candidate_AIC <- target_AIC
-  list_AIC <- foreach(j=1:length(Evar), 
+  candidate_p <- target_p
+  list_p <- foreach(j=1:length(Evar), 
                       .combine = 'c',
-                      .packages = "lme4",
+                      .packages = c("lme4", "spdep"),
                       .export = "dat2") %dopar% ## Make this parallel
     {
       #print(paste(i,j, "AIC", target_AIC))
       candidate_model <- update(model_basis, as.formula(paste(". ~ . + ", Evar[j])))
-      AIC(candidate_model)
-      
+      dat3$resid_lev2 <- ranef(candidate_model)[[1]][,1]
+      moran.test(dat3$resid_lev2, sig.lw)$p.value
     }
-  candidate_j <- which.min(list_AIC)
+  candidate_j <- which.max(list_p)
   candidate_E <- Evar[candidate_j]
-  candidate_AIC <- min(list_AIC)
+  candidate_p <- max(list_p)
   
-  improve_AIC <- target_AIC - candidate_AIC
-  if (improve_AIC > threshold_AIC) {
-    model_basis <- update(model_basis, as.formula(paste(". ~ . + ", candidate_E)))
-    target_AIC <- AIC(model_basis)
-    Evar <- Evar[-candidate_j]
+  model_basis <- update(model_basis, as.formula(paste(". ~ . + ", candidate_E)))
+  dat3$resid_lev2 <- ranef(model_basis)[[1]][,1]
+  target_MI <- moran.test(dat3$resid_lev2, sig.lw)
+  target_z <- target_MI$statistic
+  target_p <- target_MI$p.value
+  Evar <- Evar[-candidate_j]
+  
+  print(paste("Selected:", candidate_E, "z:", target_z, "p-val:", target_p))
     
-    print(paste("Selected", candidate_E, "AIC", candidate_AIC, "Improvement", improve_AIC))
-    
-  }
 }
 
 parallel::stopCluster(cl)
