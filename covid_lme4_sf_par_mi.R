@@ -18,8 +18,8 @@ load("newdata.RData")
 dat2$lpedest <- log(dat2$pedest+1)
 
 ## Subset for testing
-dat2 <- dat2 %>%
-  filter(days_since_COVID > 20 & days_since_COVID < 40)
+# dat2 <- dat2 %>%
+#   filter(days_since_COVID > 20 & days_since_COVID < 40)
 dat3 <- dat2 %>% distinct(SIGNAL)
 coords <- st_coordinates(dat3)
 nb <- graph2nb(relativeneigh(coords), sym = TRUE, row.names = dat3$SIGNAL)
@@ -90,7 +90,7 @@ target_MI <- moran.test(dat3$resid_lev2, sig.lw)
 target_z <- target_MI$statistic
 target_p <- target_MI$p.value
 
-Evar <- as.vector(paste0("E", seq(1,100)))
+Evar <- as.vector(paste0("E", seq(1,100))) ## Increase
 
 cl <- parallel::makeCluster(4)
 doParallel::registerDoParallel(cl)
