@@ -53,7 +53,7 @@ E.df$SIGNAL <- attr(nb, "region.id")
 dat2 <- merge(dat2, E.df, by = "SIGNAL")
 
 ## ----------------------------------------------------------------------------
-## Model
+## Modeling
 
 ## Set up model formula
 myform1 <- "lpedest ~ phase*(ln_popden_000_qtmi+ln_empden_000_qtmi + 
@@ -64,51 +64,48 @@ myform1_re <- "lpedest ~ phase*(ln_popden_000_qtmi+ln_empden_000_qtmi +
              ln_park_acre_qtmi + income_000_qtmi +  ln_hhsize_qtmi +  major_road + SLC) + weekend + 
 TAVG + TAVG_90 + PRCP + snow_dummy + recall"
 
+## ----------------------------------------------------------------------------
 ## Simple linear model for VIF check
 lm_re<-lm(myform1_re,dat2);summary(lm_re)
 car::vif(lm_re)
 
-## MLM formula
+## ----------------------------------------------------------------------------
+## Mixed effects model
 myform2 <- formula(paste0(myform1_re, "+ (1|SIGNAL)"))
 mlm<-lmer(myform2, dat2)
-# AIC(mlm)
+AIC(mlm)
 summary(mlm)
 
 ## Moran's test on base model
-## ranef gets second level residuals
+## Use ranef to get second level residuals
 dat3$resid_lev2 <- ranef(mlm)[[1]][,1]
 
+## Map out residuals
+# tm_shape(dat3) + tm_symbols(col = "resid_lev2", style = "fisher")
 
-tm_shape(dat3) + tm_symbols(col = "resid_lev2", style = "fisher")
-
-target_MI <- moran.test(dat3$resid_lev2, sig.lw)
-target_z <- target_MI$statistic
-target_p <- target_MI$p.value
-# var<-as.vector(c("E1", "E2", "E3", "E4", "E5"))
-# 
-# system.time(
-#   mlm.sf <- forward.lmer(mlm,var)
-# )
-
-threshold_p <- 0.07
-model_basis <- mlm
-dat3$resid_lev2 <- ranef(model_basis)[[1]][,1]
+## Estimate Moran's I and store values + p-val
 target_MI <- moran.test(dat3$resid_lev2, sig.lw)
 target_z <- target_MI$statistic
 target_p <- target_MI$p.value
 
-Evar <- as.vector(paste0("E", seq(1,200))) ## Increase
-# 
+## ----------------------------------------------------------------------------
+## Spatial filtering
+
+## Set up for loop
+threshold_p <- 0.07 ## Stopping threshold
+model_basis <- mlm ## Model basis (non filtered MLM)
+
+## Used to restrict EV search 
+Evar <- as.vector(paste0("E", seq(1,200))) ## Should be increased to nrow(E.df)
+
+## Set up for parallel run (adjust core number as needed)
 cl <- parallel::makeCluster(8)
 doParallel::registerDoParallel(cl)
 
 ## Outer loop
-## iterate over all candidate MEs - maybe replace with a condition?
 while ((target_p < threshold_p) & (length(Evar) > 0))  {
-  # Iteratively updating the model with addition of one block of variable(s)
-  # Also: extracting the loglikelihood of each estimated model
-  
-  candidate_p <- target_p
+  ## Inner loop
+  candidate_p <- target_p 
   list_p <- foreach(j=1:length(Evar), 
                       .combine = 'c',
                       .packages = c("lme4", "spdep"),
@@ -123,13 +120,18 @@ while ((target_p < threshold_p) & (length(Evar) > 0))  {
   candidate_E <- Evar[candidate_j]
   candidate_p <- max(list_p)
   
+  ## Update model basis with selected EV
   model_basis <- update(model_basis, as.formula(paste(". ~ . + ", candidate_E)))
+  ## Get updated residuals
   dat3$resid_lev2 <- ranef(model_basis)[[1]][,1]
+  ## Calculate Moran's I on new residuals
   target_MI <- moran.test(dat3$resid_lev2, sig.lw)
   target_z <- target_MI$statistic
   target_p <- target_MI$p.value
+  ## Remove selected EV from list
   Evar <- Evar[-candidate_j]
   
+  ## Some output
   print(paste("Selected:", candidate_E, "z:", target_z, "p-val:", target_p))
     
 }
