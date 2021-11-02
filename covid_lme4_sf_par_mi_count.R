@@ -48,9 +48,10 @@ eig <- eigen(MCM, symmetric = TRUE)
 ## Extract vectors and sub out positive vectors
 E <- eig$vector
 E <- E[, which(eig$values > 0.01)]
+nE <- ncol(E)
 ## Make up as data frame for modeling
 E.df <- as.data.frame(E)
-colnames(E.df) <- paste0("E", 1:ncol(E))
+colnames(E.df) <- paste0("E", 1:nE)
 E.df$SIGNAL <- attr(nb, "region.id")
 
 ## Merge full set of eigenvectors back with data
@@ -103,8 +104,8 @@ threshold_p <- 0.05 ## Stopping threshold
 model_basis <- mlm ## Model basis (non filtered MLM)
 
 ## Used to restrict EV search 
-Evar <- as.vector(paste0("E", seq(1,20))) ## Should be increased to ncol(E.df)
-Evar <- as.vector(paste0("E", ncol(E.df))) 
+Evar <- as.vector(paste0("E", seq(1,20))) ## Should be increased to ncol(E)
+Evar <- as.vector(paste0("E", nE)) 
 
 ## Set up for parallel run (adjust core number as needed)
 cl <- parallel::makeCluster(8)
