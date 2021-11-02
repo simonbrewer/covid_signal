@@ -18,12 +18,12 @@ rm(list = ls())
 dat2 <- readRDS("./data/data_for_COVIDmodel.rds")
 
 # ## Subset for testing
-library(lubridate)
-dat2$TIME1 <- ymd(dat2$TIME1)
-dat2 <- dat2 %>%
-  filter(month(dat2$TIME1) %in% c(4, 5) & year(dat2$TIME1) == 2020)
-dat2$TAVG_90[sample(1:nrow(dat2), 100)] <- 1 ## Meaningless dummy
-dat2$snow_dummy[sample(1:nrow(dat2), 100)] <- 1 ## Meaningless dummy
+# library(lubridate)
+# dat2$TIME1 <- ymd(dat2$TIME1)
+# dat2 <- dat2 %>%
+#   filter(month(dat2$TIME1) %in% c(4, 5) & year(dat2$TIME1) == 2020)
+# dat2$TAVG_90[sample(1:nrow(dat2), 100)] <- 1 ## Meaningless dummy
+# dat2$snow_dummy[sample(1:nrow(dat2), 100)] <- 1 ## Meaningless dummy
 
 ## Subset to create the graph network
 dat3 <- distinct(dat2, SIGNAL, .keep_all = TRUE)
@@ -104,6 +104,7 @@ model_basis <- mlm ## Model basis (non filtered MLM)
 
 ## Used to restrict EV search 
 Evar <- as.vector(paste0("E", seq(1,20))) ## Should be increased to ncol(E.df)
+Evar <- as.vector(paste0("E", ncol(E.df))) 
 
 ## Set up for parallel run (adjust core number as needed)
 cl <- parallel::makeCluster(8)
