@@ -41,6 +41,7 @@ myform1_re <- "lpedest ~ Count*(ln_popden_000_qtmi+ln_empden_000_qtmi +
 
 final_model <- lmer_sf(myform1_re, dat2, 
                        idcol = "SIGNAL", nb = nb,
-                       pthresh = 0.05, evlimit = 20)
+                       alpha = 0.05, evlimit = 20,
+                       parallel = TRUE, verbose = TRUE)
 
 save(final_model, file = "covid_sf_count.RData")
