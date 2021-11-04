@@ -1,5 +1,20 @@
+## ----------------------------------------------------------------------------
+## lmer_sf: function to calculate spatial filter for mixed effects model fit 
+## using lmer() from lme4
+##
+## ARGS:
+## formula: Standard R formula *including* random effect term (e.g. + (1|grp))
+## data: data frame containing all variables for model
+## idcol: name of column in dataframe with the groups for the random effects
+## nb: a nb object with the neighborhood structure (from spdep)
+## alpha: the minimum threshold for the p-value from Moran's I
+## evlimit: sets hard limit on number of eigenvectors tested in stepwise
+##          (integer). If set, will only test up to this EV number
+## parallel: use parallel backend for the foreach loop
+## verbose: progress reports, etc
+
 lmer_sf <- function(formula, data, idcol,
-                    nb, pthresh = 0.05, 
+                    nb, alpha = 0.05, 
                     evlimit = NULL, parallel = FALSE,
                     verbose = TRUE) {
   require(lme4)
@@ -21,7 +36,7 @@ lmer_sf <- function(formula, data, idcol,
   eig <- eigen(MCM, symmetric = TRUE)
   ## Extract vectors and sub out positive vectors
   E <- eig$vector
-  E <- E[, which(eig$values > 0.01)]
+  #E <- E[, which(eig$values > 0.01)] ## this can be removed might conflict with the evlimit
   if (is.null(evlimit)) {
     nE <- ncol(E)
   } else {
@@ -50,7 +65,7 @@ lmer_sf <- function(formula, data, idcol,
   target_p <- target_MI$p.value
   
   ## Sanity check if autocorrelation $p$ is lower than threshold
-  if (target_p > pthresh)
+  if (target_p > alpha)
     stop("Current model p-value is higher than threshold")
   
   if (verbose)
@@ -66,7 +81,7 @@ lmer_sf <- function(formula, data, idcol,
   all_j <- all_E <- all_p <- all_I <- all_z <- NULL
   
   ## Outer loop
-  while ((target_p < pthresh) & (length(Evar) > 0))  {
+  while ((target_p < alpha) & (length(Evar) > 0))  {
     ## Inner loop
     candidate_p <- target_p 
     if (parallel) {
