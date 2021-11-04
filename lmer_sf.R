@@ -122,11 +122,11 @@ lmer_sf <- function(formula, data, idcol,
     
     ## Calculate Moran's I on new residuals
     target_MI <- moran.test(resid_lev2, sig.lw)
-    all_I <- c(all_I, candidate_I)
+    all_I <- c(all_I, target_MI$estimate[1])
     target_z <- target_MI$statistic
-    all_z <- c(all_z, candidate_z)
+    all_z <- c(all_z, target_z)
     target_p <- target_MI$p.value
-    all_p <- c(all_p, candidate_p)
+    all_p <- c(all_p, target_p)
     ## Remove selected EV from list
     Evar <- Evar[-candidate_j]
     
@@ -141,7 +141,7 @@ lmer_sf <- function(formula, data, idcol,
     parallel::stopCluster(cl)
 
   ## Dataframe of stepwise results
-  step_out = data.frame(all_j, all_E, all_I, all_z, all_p)
+  step_out = data.frame(all_E, all_I, all_z, all_p)
   ## Output
   return(list(step_out = step_out,
               model_basis = model_basis,
