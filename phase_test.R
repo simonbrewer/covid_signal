@@ -39,6 +39,8 @@ myform1_re <- "lpedest ~ phase*(ln_popden_000_qtmi+ln_empden_000_qtmi +
              ln_park_acre_qtmi + income_000_qtmi +  ln_hhsize_qtmi +  major_road + SLC) + 
              weekend + TAVG + TAVG_90 + PRCP + snow_dummy + recall + (1 | SIGNAL)"
 
-x <- lmer_sf(myform1_re, dat2, 
-             idcol = "SIGNAL", nb = nb,
-             pthresh = 0.05, evlimit = 20)
+final_model <- lmer_sf(myform1_re, dat2, 
+                       idcol = "SIGNAL", nb = nb,
+                       pthresh = 0.05, evlimit = 20)
+
+save(final_model, file = "covid_sf_phase.RData")
