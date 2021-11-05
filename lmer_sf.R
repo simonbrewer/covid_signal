@@ -79,6 +79,7 @@ lmer_sf <- function(formula, data, idcol,
   
   ## Output
   all_j <- all_E <- all_p <- all_I <- all_z <- NULL
+  sel_E <- NULL
   
   ## Outer loop
   while ((target_p < alpha) & (length(Evar) > 0))  {
@@ -111,6 +112,7 @@ lmer_sf <- function(formula, data, idcol,
     candidate_j <- which.max(list_p)
     all_j <- c(all_j, candidate_j)
     candidate_E <- Evar[candidate_j]
+    sel_E <- cbind(sel_E, E.df[, candidate_E])
     all_E <- c(all_E, candidate_E)
     candidate_p <- max(list_p)
 
@@ -142,8 +144,11 @@ lmer_sf <- function(formula, data, idcol,
 
   ## Dataframe of stepwise results
   step_out = data.frame(all_E, all_I, all_z, all_p)
+  colnames(sel_E) <- all_E
+  
   ## Output
   return(list(step_out = step_out,
+              sel_E = sel_E,
               model_basis = model_basis,
               mi = target_MI))
   
