@@ -11,15 +11,19 @@
 ## evlimit: sets hard limit on number of eigenvectors tested in stepwise
 ##          (integer). If set, will only test up to this EV number
 ## parallel: use parallel backend for the foreach loop
+## ncores: sets number of cores for the foreach package
 ## verbose: progress reports, etc
 
 lmer_sf <- function(formula, data, idcol,
                     nb, alpha = 0.05, 
-                    evlimit = NULL, parallel = FALSE,
+                    evlimit = NULL, 
+                    parallel = FALSE,
+                    ncores = 1,
                     verbose = TRUE) {
   require(lme4)
   require(spdep)
   require(foreach)
+  require(lmerTest)
   
   ## Spatial weight matrix
   sig.lw = nb2listw(nb, style = "B")
@@ -73,7 +77,7 @@ lmer_sf <- function(formula, data, idcol,
   
   ## Set up for parallel run (adjust core number as needed)
   if (parallel) {
-    cl <- parallel::makeCluster(8)
+    cl <- parallel::makeCluster(ncores)
     doParallel::registerDoParallel(cl)
   }
   

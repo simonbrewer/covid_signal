@@ -20,12 +20,12 @@ source("lmer_sf.R")
 dat2 <- readRDS("./data/data_for_COVIDmodel.rds")
 
 # ## Subset uncomment for testing
-# library(lubridate)
-# dat2$TIME1 <- ymd(dat2$TIME1)
-# dat2 <- dat2 %>%
-#   filter(month(dat2$TIME1) %in% c(4, 5) & year(dat2$TIME1) == 2020)
-# dat2$TAVG_90[sample(1:nrow(dat2), 100)] <- 1 ## Meaningless dummy
-# dat2$snow_dummy[sample(1:nrow(dat2), 100)] <- 1 ## Meaningless dummy
+library(lubridate)
+dat2$TIME1 <- ymd(dat2$TIME1)
+dat2 <- dat2 %>%
+  filter(month(dat2$TIME1) %in% c(4, 5) & year(dat2$TIME1) == 2020)
+dat2$TAVG_90[sample(1:nrow(dat2), 100)] <- 1 ## Meaningless dummy
+dat2$snow_dummy[sample(1:nrow(dat2), 100)] <- 1 ## Meaningless dummy
 
 ## Subset to create the graph network
 dat3 <- distinct(dat2, SIGNAL, .keep_all = TRUE)
@@ -41,7 +41,7 @@ myform1_re <- "lpedest ~ Count*(ln_popden_000_qtmi+ln_empden_000_qtmi +
 
 final_model <- lmer_sf(myform1_re, dat2, 
                        idcol = "SIGNAL", nb = nb,
-                       alpha = 0.05, evlimit = 200,
-                       parallel = TRUE, verbose = TRUE)
+                       alpha = 0.05, evlimit = 10,
+                       parallel = FALSE, verbose = TRUE)
 
 save(final_model, file = "covid_sf_count.RData")
