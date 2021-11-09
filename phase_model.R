@@ -40,15 +40,13 @@ myform1_re <- "lpedest ~ phase*(ln_popden_000_qtmi+ln_empden_000_qtmi +
              weekend + TAVG + TAVG_90 + PRCP + snow_dummy + recall + (1 | SIGNAL)"
 
 ## Run the spatial filter
-## Set parallel = TRUE to run on multiple cores 
-## ncores sets the number of cores
-## Use evlimit to limit the number of EVs to test
-
 final_model <- lmer_sf(myform1_re, dat2, 
-                       idcol = "SIGNAL", nb = nb,
-                       alpha = 0.05, evlimit = 200,
-                       parallel = FALSE, 
-                       ncores = 4,
+                       idcol = "SIGNAL", 
+                       nb = nb,
+                       alpha = 0.05, ## Stopping threshold (MI p-val)
+                       evlimit = 200, ## Limit number of EVs to test
+                       parallel = FALSE, ## Change to use multiple cores
+                       ncores = 1, ## Sets number of cores if parallel = T
                        verbose = TRUE)
 
 save(final_model, file = "covid_sf_phase.RData")

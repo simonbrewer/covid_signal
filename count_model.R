@@ -39,9 +39,14 @@ myform1_re <- "lpedest ~ Count*(ln_popden_000_qtmi+ln_empden_000_qtmi +
              ln_park_acre_qtmi + income_000_qtmi +  ln_hhsize_qtmi +  major_road + SLC) + 
              weekend + TAVG + TAVG_90 + PRCP + snow_dummy + recall + (1 | SIGNAL)"
 
+## Run the spatial filter
 final_model <- lmer_sf(myform1_re, dat2, 
-                       idcol = "SIGNAL", nb = nb,
-                       alpha = 0.05, evlimit = 10,
-                       parallel = FALSE, verbose = TRUE)
+                       idcol = "SIGNAL", 
+                       nb = nb,
+                       alpha = 0.05, ## Stopping threshold (MI p-val)
+                       evlimit = 200, ## Limit number of EVs to test
+                       parallel = FALSE, ## Change to use multiple cores
+                       ncores = 1, ## Sets number of cores if parallel = T
+                       verbose = TRUE)
 
 save(final_model, file = "covid_sf_count.RData")
